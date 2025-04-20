@@ -1,3 +1,4 @@
+
 import org.apache.poi.xwpf.usermodel.*;
 import org.docx4j.Docx4J;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
@@ -7,71 +8,74 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BatchWordToPdfWithMultiline {
+public class WordToPdfBatchGenerator {
 
     public static void main(String[] args) throws Exception {
-        File inputFile = new File("template.docx"); // Şablon dosyanız
+        File inputFile = new File("template.docx"); // Şablon Word dosyası
         String fileNameWithoutExt = inputFile.getName().replaceFirst("[.][^.]+$", "");
-        String basePath = inputFile.getParent();
+        String basePath = inputFile.getParent() != null ? inputFile.getParent() : ".";
 
-        // 1. Word şablonunu belleğe al (performans için)
+        // Word şablonunu belleğe al (tek sefer)
         byte[] templateBytes = Files.readAllBytes(inputFile.toPath());
 
-        // 2. 5000 örnek veri üret
+        // 5000 örnek veri üret
         List<List<String>> dataList = new ArrayList<>();
         for (int i = 1; i <= 5000; i++) {
-            List<String> data = new ArrayList<>();
-            data.add("Ad: Ali" + i);
-            data.add("Soyad: Veli" + i);
-            data.add("Tutar: " + (100 + i) + "₺");
-            dataList.add(data);
+            List<String> veri = List.of(
+                "Karar No: K-" + i,
+                "Devreden Firma: Firma A, Firma B, Firma C",
+                "Tutar: " + (1000 + i) + " TL",
+                "ALICI: Ali Veli",
+                "BANKA: Banka X",
+                "HESAP: TR00 0000 0000 0000",
+                "AÇIKLAMA: Ödeme açıklaması " + i
+            );
+            dataList.add(veri);
         }
 
         long start = System.currentTimeMillis();
 
+        // Her veri için belge oluştur
         int index = 1;
-        for (List<String> multiLineData : dataList) {
+        for (List<String> fields : dataList) {
             try (InputStream in = new ByteArrayInputStream(templateBytes)) {
                 XWPFDocument doc = new XWPFDocument(in);
 
-                // Çok satırlı veriyi %s yerine yaz
-                replacePlaceholdersWithMultiline(doc, "%s", multiLineData);
+                // Tüm %s'leri sırayla doldur
+                replaceAllPlaceholders(doc, fields);
 
                 // Geçici .docx dosyasını yaz
-                File tempDocx = new File(basePath, fileNameWithoutExt + "_filled_" + index + ".docx");
-                try (FileOutputStream docxOut = new FileOutputStream(tempDocx)) {
-                    doc.write(docxOut);
+                File filledDocx = new File(basePath, fileNameWithoutExt + "_filled_" + index + ".docx");
+                try (FileOutputStream out = new FileOutputStream(filledDocx)) {
+                    doc.write(out);
                 }
 
                 // PDF'e çevir
-                WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(tempDocx);
                 File outputPdf = new File(basePath, fileNameWithoutExt + "_" + index + ".pdf");
-                try (FileOutputStream pdfOut = new FileOutputStream(outputPdf)) {
-                    Docx4J.toPDF(wordMLPackage, pdfOut);
+                WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(filledDocx);
+                try (FileOutputStream outPdf = new FileOutputStream(outputPdf)) {
+                    Docx4J.toPDF(wordMLPackage, outPdf);
                 }
 
-                // Temizlik (isteğe bağlı)
-                tempDocx.delete();
+                // Temizleme (isteğe bağlı)
+                filledDocx.delete();
                 index++;
             }
         }
 
         long end = System.currentTimeMillis();
-        System.out.println("Toplam süre: " + (end - start) + " ms");
+        System.out.println("Tamamlandı. Süre: " + (end - start) + " ms");
     }
 
-    // Çok satırlı veriyi %s yerine yazan method
-    private static void replacePlaceholdersWithMultiline(XWPFDocument doc, String placeholder, List<String> lines) {
-        for (XWPFParagraph paragraph : doc.getParagraphs()) {
-            for (XWPFRun run : paragraph.getRuns()) {
-                String text = run.getText(0);
-                if (text != null && text.contains(placeholder)) {
-                    run.setText("", 0); // Eski text'i temizle
-
-                    for (int i = 0; i < lines.size(); i++) {
-                        run.setText(lines.get(i));
-                        if (i != lines.size() - 1) run.addBreak(); // Alt satıra geç
-                    }
+    // %s placeholderlarını sırayla doldurur
+    private static void replaceAllPlaceholders(XWPFDocument doc, List<String> values) {
+        int valueIndex = 0;
+        for (XWPFParagraph p : doc.getParagraphs()) {
+            for (XWPFRun r : p.getRuns()) {
+                String text = r.getText(0);
+                if (text != null && text.contains("%s") && valueIndex < values.size()) {
+                    String replaced = text.replaceFirst("%s", values.get(valueIndex++));
+                    r.setText(replaced, 0);
                 }
             }
         }
