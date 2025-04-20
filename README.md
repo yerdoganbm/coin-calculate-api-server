@@ -1,4 +1,28 @@
+private static P createParagraph(String text) {
+    P p = new P();
+    Text t = new Text();
+    t.setValue(text);
+    R r = new R();
+    r.getContent().add(t);
+    p.getContent().add(r);
+    return p;
+}
 
+private static String getTextFromParagraph(P p) {
+    StringBuilder sb = new StringBuilder();
+    List<Object> runs = p.getContent();
+    for (Object obj : runs) {
+        if (obj instanceof R) {
+            R run = (R) obj;
+            for (Object content : run.getContent()) {
+                if (content instanceof Text) {
+                    sb.append(((Text) content).getValue());
+                }
+            }
+        }
+    }
+    return sb.toString().trim();
+}
 
        import org.apache.poi.xwpf.usermodel.*;
 import org.docx4j.Docx4J;
