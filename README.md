@@ -1,3 +1,40 @@
+for (String[] devir : devirList) {
+    // 1. satır: Karar No + Tutar
+    P p1 = createParagraph(String.format("Karar No: %s    Tutar (TL): %s", devir[0], devir[1]));
+    // 2. satır: Devreden Firma
+    P p2 = createParagraph("Devreden Firma: " + devir[2]);
+    // Boşluk için boş paragraf
+    P pEmpty = createParagraph("");
+
+    paragraphs.add(p1);
+    paragraphs.add(p2);
+    paragraphs.add(pEmpty);
+}
+
+// Şablonda %%DEVIR_BILGILERI%% olan paragrafı bul ve yerine bu satırları ekle
+List<Object> content = mainPart.getContent();
+for (int i = 0; i < content.size(); i++) {
+    Object o = content.get(i);
+    if (o instanceof P) {
+        P para = (P) o;
+        String text = getTextFromParagraph(para);
+        if ("%%DEVIR_BILGILERI%%".equals(text)) {
+            content.remove(i);
+            content.addAll(i, paragraphs);
+            break;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
 private static P createParagraph(String text) {
     P p = new P();
     Text t = new Text();
