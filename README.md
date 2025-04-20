@@ -1,5 +1,6 @@
 
-import org.apache.poi.xwpf.usermodel.*;
+
+       import org.apache.poi.xwpf.usermodel.*;
 import org.docx4j.Docx4J;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 
@@ -10,64 +11,73 @@ import java.util.List;
 
 public class WordToPdfBatchGenerator {
 
-    public static void main(String[] args) throws Exception {
-        File inputFile = new File("template.docx"); // Şablon Word dosyası
-        String fileNameWithoutExt = inputFile.getName().replaceFirst("[.][^.]+$", "");
-        String basePath = inputFile.getParent() != null ? inputFile.getParent() : ".";
+    public static void main(String[] args) {
+        try {
+            File inputFile = new File("template.docx");
+            String fileNameWithoutExt = inputFile.getName().replaceFirst("[.][^.]+$", "");
+            String basePath = "word/print";
 
-        // Word şablonunu belleğe al (tek sefer)
-        byte[] templateBytes = Files.readAllBytes(inputFile.toPath());
+            // Alt klasörü oluştur
+            File outputDir = new File(basePath);
+            if (!outputDir.exists()) outputDir.mkdirs();
 
-        // 5000 örnek veri üret
-        List<List<String>> dataList = new ArrayList<>();
-        for (int i = 1; i <= 5000; i++) {
-            List<String> veri = List.of(
-                "Karar No: K-" + i,
-                "Devreden Firma: Firma A, Firma B, Firma C",
-                "Tutar: " + (1000 + i) + " TL",
-                "ALICI: Ali Veli",
-                "BANKA: Banka X",
-                "HESAP: TR00 0000 0000 0000",
-                "AÇIKLAMA: Ödeme açıklaması " + i
-            );
-            dataList.add(veri);
-        }
+            // Word şablonunu belleğe al
+            byte[] templateBytes = Files.readAllBytes(inputFile.toPath());
 
-        long start = System.currentTimeMillis();
-
-        // Her veri için belge oluştur
-        int index = 1;
-        for (List<String> fields : dataList) {
-            try (InputStream in = new ByteArrayInputStream(templateBytes)) {
-                XWPFDocument doc = new XWPFDocument(in);
-
-                // Tüm %s'leri sırayla doldur
-                replaceAllPlaceholders(doc, fields);
-
-                // Geçici .docx dosyasını yaz
-                File filledDocx = new File(basePath, fileNameWithoutExt + "_filled_" + index + ".docx");
-                try (FileOutputStream out = new FileOutputStream(filledDocx)) {
-                    doc.write(out);
-                }
-
-                // PDF'e çevir
-                File outputPdf = new File(basePath, fileNameWithoutExt + "_" + index + ".pdf");
-                WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(filledDocx);
-                try (FileOutputStream outPdf = new FileOutputStream(outputPdf)) {
-                    Docx4J.toPDF(wordMLPackage, outPdf);
-                }
-
-                // Temizleme (isteğe bağlı)
-                filledDocx.delete();
-                index++;
+            // Örnek veri üret
+            List<List<String>> dataList = new ArrayList<>();
+            for (int i = 1; i <= 5; i++) { // test için 5 kayıt, 5000 yapabilirsin
+                List<String> fields = List.of(
+                        "Karar No: K-" + i,
+                        "Devreden Firma: Firma A, Firma B, Firma C",
+                        "Tutar: " + (1000 + i) + " TL",
+                        "ALICI: Ali Veli",
+                        "BANKA: Banka X",
+                        "HESAP: TR00 0000 0000 0000",
+                        "AÇIKLAMA: Ödeme açıklaması " + i
+                );
+                dataList.add(fields);
             }
-        }
 
-        long end = System.currentTimeMillis();
-        System.out.println("Tamamlandı. Süre: " + (end - start) + " ms");
+            long start = System.currentTimeMillis();
+
+            // Her veri için döngü
+            int index = 1;
+            for (List<String> fields : dataList) {
+                try (InputStream in = new ByteArrayInputStream(templateBytes)) {
+                    XWPFDocument doc = new XWPFDocument(in);
+
+                    // %s alanlarını doldur
+                    replaceAllPlaceholders(doc, fields);
+
+                    // Doldurulmuş .docx'i yaz
+                    File filledDocx = new File(outputDir, fileNameWithoutExt + "_filled_" + index + ".docx");
+                    try (FileOutputStream out = new FileOutputStream(filledDocx)) {
+                        doc.write(out);
+                    }
+
+                    // PDF'e çevir
+                    File outputPdf = new File(outputDir, fileNameWithoutExt + "_" + index + ".pdf");
+                    WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(filledDocx);
+                    try (FileOutputStream outPdf = new FileOutputStream(outputPdf)) {
+                        Docx4J.toPDF(wordMLPackage, outPdf);
+                    }
+
+                    filledDocx.delete(); // isteğe bağlı
+                    index++;
+                }
+            }
+
+            long end = System.currentTimeMillis();
+            System.out.println("Tamamlandı. Süre: " + (end - start) + " ms");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Hata: " + e.getMessage());
+        }
     }
 
-    // %s placeholderlarını sırayla doldurur
+    // %s alanlarını sırayla doldurur
     private static void replaceAllPlaceholders(XWPFDocument doc, List<String> values) {
         int valueIndex = 0;
         for (XWPFParagraph p : doc.getParagraphs()) {
@@ -82,7 +92,6 @@ public class WordToPdfBatchGenerator {
     }
 }
 
-       
        
        
        
