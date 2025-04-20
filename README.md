@@ -1,3 +1,26 @@
+       Aşağıda unvanı yer alan firmanın ilgili ihracatçı birliğine yaptığı başvurunun değerlendirilmesi sonucunda firmanıza tanınan hak edişe ilişkin belge hazırlanmış bulunmaktadır. Bu hak ediş belgesi, firmanız yetkili temsilcisine imza sirküleri ve T.C. Kimlik Kartının ibrazı kaydıyla teslim edilecektir. 
+        
+        İlgili Kararda belirtilen kurumlara olan borçlarınızın mahsuben ödenmesini teminen bu kurum ünitelerinden alınacak borç döküm formuyla birlikte Şubemize başvurmanız gerekmektedir.  Sosyal Güvenlik Kurumuna olan borçlar çevrimiçi (online) sorgulanacağı için borç döküm formunun ibrazına gerek bulunmamaktadır.
+
+         Sosyal Güvenlik Kurumuna olan borçların ödenmesi sürecinde kullanılan bilişim altyapısı nedeniyle ödeme işlemi başvuru günü içerisinde tamamlanamamaktadır. Bu nedenle, söz konusu kuruma olan borçlara ilişkin mahsup talebi başvurularında bu durumun göz önünde bulundurulması gerekmektedir.
+
+         Borç ödemesini müteakip borç tutarının hak ediş belgesi bakiyesinden düşülüp onaylanmasından sonra hak ediş belgesi tarafınıza teslim edilecektir. Hak ediş belgesinin bakiyesinin kalmaması halinde belge, Şubemizce alıkonacaktır. Aynı Karara ilişkin bir önceki hak ediş belgesi iade edilmeden yeni belge verilmeyecektir.
+
+         Ayrıca, hak ediş belgesinin kaybolduğunun bildirilmesi halinde yenisi düzenlenecek olup kaybolan hak ediş belgesinin bulunması halinde Şubemize ibraz etmeniz gerekmektedir. Kaybolan hak ediş belgesi üzerinden herhangi bir hak talebinde bulunulamaz.
+
+Bilginizi rica ederiz.
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
  DocVeri docVeri = new DocVeri();
                 docVeri.addGrupVeriAll(veriler);
 
