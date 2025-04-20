@@ -1,3 +1,12 @@
+ DocVeri docVeri = new DocVeri();
+                docVeri.addGrupVeriAll(veriler);
+
+                PikurDocument pd = pikurIslemService.xmlYukle(ihracatciDevirMektubuPikurXMLPath);
+                ByteArrayOutputStream baos = pikurIslemService.pdfDocOlustur(pd, docVeri, PageSize.A4, OrientationRequested.PORTRAIT);
+                ExportedFile file = outputAsPDF(baos, this.handleExportFileName(odemeTarihi, MektupTipEnum.HAKEDIS_DEVIR_MEKTUPLARI));
+
+
+
 <?xml version="1.0" encoding="ISO-8859-9"?>
 <tns:pikur xmlns:tns="http://submuhm.tcmb.gov.tr/Pikur"
            charPerInch="15" linePerInch="8" sayfaSatirSayi="100">
