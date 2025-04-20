@@ -1,3 +1,88 @@
+import org.apache.poi.xwpf.usermodel.*;
+import org.docx4j.Docx4J;
+import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+
+public class BatchWordToPdfWithMultiline {
+
+    public static void main(String[] args) throws Exception {
+        File inputFile = new File("template.docx"); // Şablon dosyanız
+        String fileNameWithoutExt = inputFile.getName().replaceFirst("[.][^.]+$", "");
+        String basePath = inputFile.getParent();
+
+        // 1. Word şablonunu belleğe al (performans için)
+        byte[] templateBytes = Files.readAllBytes(inputFile.toPath());
+
+        // 2. 5000 örnek veri üret
+        List<List<String>> dataList = new ArrayList<>();
+        for (int i = 1; i <= 5000; i++) {
+            List<String> data = new ArrayList<>();
+            data.add("Ad: Ali" + i);
+            data.add("Soyad: Veli" + i);
+            data.add("Tutar: " + (100 + i) + "₺");
+            dataList.add(data);
+        }
+
+        long start = System.currentTimeMillis();
+
+        int index = 1;
+        for (List<String> multiLineData : dataList) {
+            try (InputStream in = new ByteArrayInputStream(templateBytes)) {
+                XWPFDocument doc = new XWPFDocument(in);
+
+                // Çok satırlı veriyi %s yerine yaz
+                replacePlaceholdersWithMultiline(doc, "%s", multiLineData);
+
+                // Geçici .docx dosyasını yaz
+                File tempDocx = new File(basePath, fileNameWithoutExt + "_filled_" + index + ".docx");
+                try (FileOutputStream docxOut = new FileOutputStream(tempDocx)) {
+                    doc.write(docxOut);
+                }
+
+                // PDF'e çevir
+                WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(tempDocx);
+                File outputPdf = new File(basePath, fileNameWithoutExt + "_" + index + ".pdf");
+                try (FileOutputStream pdfOut = new FileOutputStream(outputPdf)) {
+                    Docx4J.toPDF(wordMLPackage, pdfOut);
+                }
+
+                // Temizlik (isteğe bağlı)
+                tempDocx.delete();
+                index++;
+            }
+        }
+
+        long end = System.currentTimeMillis();
+        System.out.println("Toplam süre: " + (end - start) + " ms");
+    }
+
+    // Çok satırlı veriyi %s yerine yazan method
+    private static void replacePlaceholdersWithMultiline(XWPFDocument doc, String placeholder, List<String> lines) {
+        for (XWPFParagraph paragraph : doc.getParagraphs()) {
+            for (XWPFRun run : paragraph.getRuns()) {
+                String text = run.getText(0);
+                if (text != null && text.contains(placeholder)) {
+                    run.setText("", 0); // Eski text'i temizle
+
+                    for (int i = 0; i < lines.size(); i++) {
+                        run.setText(lines.get(i));
+                        if (i != lines.size() - 1) run.addBreak(); // Alt satıra geç
+                    }
+                }
+            }
+        }
+    }
+}
+
+       
+       
+       
+       
+       
        Aşağıda unvanı yer alan firmanın ilgili ihracatçı birliğine yaptığı başvurunun değerlendirilmesi sonucunda firmanıza tanınan hak edişe ilişkin belge hazırlanmış bulunmaktadır. Bu hak ediş belgesi, firmanız yetkili temsilcisine imza sirküleri ve T.C. Kimlik Kartının ibrazı kaydıyla teslim edilecektir. 
         
         İlgili Kararda belirtilen kurumlara olan borçlarınızın mahsuben ödenmesini teminen bu kurum ünitelerinden alınacak borç döküm formuyla birlikte Şubemize başvurmanız gerekmektedir.  Sosyal Güvenlik Kurumuna olan borçlar çevrimiçi (online) sorgulanacağı için borç döküm formunun ibrazına gerek bulunmamaktadır.
