@@ -1,3 +1,26 @@
+public static String simplifyTurkishCharacters(String input) {
+    if (input == null) {
+        return null;
+    }
+
+    return input
+            .replace('İ', 'I')
+            .replace('I', 'I') // zaten büyük I olmalı
+            .replace('ı', 'i')
+            .replace('Ğ', 'G')
+            .replace('ğ', 'g')
+            .replace('Ü', 'U')
+            .replace('ü', 'u')
+            .replace('Ş', 'S')
+            .replace('ş', 's')
+            .replace('Ö', 'O')
+            .replace('ö', 'o')
+            .replace('Ç', 'C')
+            .replace('ç', 'c');
+}
+
+
+
 import java.text.Normalizer;
 import java.util.HashMap;
 import java.util.Map;
