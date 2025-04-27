@@ -10,6 +10,57 @@ public static String normalizeTurkishCharacters(String input) {
     // 1. Unicode normalize et
     String normalized = Normalizer.normalize(input, Normalizer.Form.NFC);
 
+    // 2. Bütün bozuk karakterler için düzeltme tablosu
+    Map<String, String> turkishChars = new HashMap<>();
+    turkishChars.put("Ã‡", "Ç");
+    turkishChars.put("Ã§", "ç");
+    turkishChars.put("Äž", "Ğ");
+    turkishChars.put("ÄŸ", "ğ");
+    turkishChars.put("Ä°", "İ");
+    turkishChars.put("Ä±", "ı");
+    turkishChars.put("Ã–", "Ö");
+    turkishChars.put("Ã¶", "ö");
+    turkishChars.put("Ãœ", "Ü");
+    turkishChars.put("Ã¼", "ü");
+    turkishChars.put("Åž", "Ş");
+    turkishChars.put("ÅŸ", "ş");
+    turkishChars.put("#C", "Ç");
+    turkishChars.put("#c", "ç");
+    turkishChars.put("#G", "Ğ");
+    turkishChars.put("#g", "ğ");
+    turkishChars.put("#S", "Ş");
+    turkishChars.put("#s", "ş");
+    turkishChars.put("#I", "İ");
+    turkishChars.put("#i", "ı");
+    turkishChars.put("#O", "Ö");
+    turkishChars.put("#o", "ö");
+    turkishChars.put("#U", "Ü");
+    turkishChars.put("#u", "ü");
+    turkishChars.put("#", ""); // Boş kare gibi görülen karakterleri tamamen temizle
+
+    for (Map.Entry<String, String> entry : turkishChars.entrySet()) {
+        normalized = normalized.replace(entry.getKey(), entry.getValue());
+    }
+
+    return normalized;
+}
+
+
+
+
+
+import java.text.Normalizer;
+import java.util.HashMap;
+import java.util.Map;
+
+public static String normalizeTurkishCharacters(String input) {
+    if (input == null) {
+        return null;
+    }
+
+    // 1. Unicode normalize et
+    String normalized = Normalizer.normalize(input, Normalizer.Form.NFC);
+
     // 2. Türkçe karakterleri manuel koru
     Map<String, String> turkishChars = new HashMap<>();
     turkishChars.put("Ã‡", "Ç");
