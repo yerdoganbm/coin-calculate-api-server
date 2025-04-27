@@ -1,3 +1,45 @@
+import java.text.Normalizer;
+import java.util.HashMap;
+import java.util.Map;
+
+public static String normalizeTurkishCharacters(String input) {
+    if (input == null) {
+        return null;
+    }
+
+    // 1. Unicode normalize et
+    String normalized = Normalizer.normalize(input, Normalizer.Form.NFC);
+
+    // 2. Türkçe karakterleri manuel koru
+    Map<String, String> turkishChars = new HashMap<>();
+    turkishChars.put("Ã‡", "Ç");
+    turkishChars.put("Ã§", "ç");
+    turkishChars.put("ÄŸ", "ğ");
+    turkishChars.put("Äž", "Ğ");
+    turkishChars.put("Ã–", "Ö");
+    turkishChars.put("Ã¶", "ö");
+    turkishChars.put("Ãœ", "Ü");
+    turkishChars.put("Ã¼", "ü");
+    turkishChars.put("ÅŸ", "ş");
+    turkishChars.put("Åž", "Ş");
+    turkishChars.put("Ä°", "İ");
+    turkishChars.put("Ä±", "ı");
+
+    for (Map.Entry<String, String> entry : turkishChars.entrySet()) {
+        normalized = normalized.replace(entry.getKey(), entry.getValue());
+    }
+
+    return normalized;
+}
+
+
+
+
+
+
+
+
+
 for (String[] devir : devirList) {
     // 1. satır: Karar No + Tutar
     P p1 = createParagraph(String.format("Karar No: %s    Tutar (TL): %s", devir[0], devir[1]));
