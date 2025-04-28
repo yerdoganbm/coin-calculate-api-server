@@ -1,3 +1,185 @@
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.docx4j.XmlUtils;
+import org.docx4j.convert.out.pdf.PdfConversion;
+import org.docx4j.convert.out.pdf.viaXSLFO.Conversion;
+import org.docx4j.fonts.IdentityPlusMapper;
+import org.docx4j.fonts.PhysicalFonts;
+import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
+import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
+import org.docx4j.wml.*;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+public class FileProcessingUtil {
+
+    /**
+     * Birden fazla DTO'yu alır, hepsini işleyip tek bir birleşik PDF üretir.
+     */
+    public static ByteArrayOutputStream generateValidatedMektupPdf(List<FileProcessDTO> dtoList) throws Exception {
+        long start = System.currentTimeMillis();
+        logger.info("generateValidatedMektupPdf(List) başladı");
+
+        PDFMergerUtility merger = new PDFMergerUtility();
+        ByteArrayOutputStream mergedOutputStream = new ByteArrayOutputStream();
+
+        for (FileProcessDTO dto : dtoList) {
+            ByteArrayOutputStream singlePdf = generateSingleMektupPdf(dto);
+            merger.addSource(new ByteArrayInputStream(singlePdf.toByteArray()));
+        }
+
+        merger.setDestinationStream(mergedOutputStream);
+        merger.mergeDocuments(null);
+
+        logger.info("generateValidatedMektupPdf(List) bitti. Süre(ms): " + (System.currentTimeMillis() - start));
+        return mergedOutputStream;
+    }
+
+    /**
+     * Tek bir DTO'yu işler, bir küçük PDF üretir.
+     */
+    private static ByteArrayOutputStream generateSingleMektupPdf(FileProcessDTO dto) throws Exception {
+        InputStream in = new ByteArrayInputStream(dto.getInputFileBytes());
+        WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(in);
+
+        // Font yüklemesi
+        InputStream fontInput = FileProcessingUtil.class.getClassLoader().getResourceAsStream("print/DejaVuSans.ttf");
+        if (fontInput == null) {
+            throw new FileNotFoundException("DejaVuSans.ttf bulunamadı!");
+        }
+        File tempFile = File.createTempFile("dejavusans_", ".ttf");
+        Files.copy(fontInput, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        PhysicalFonts.addPhysicalFont(tempFile.toURI().toURL());
+        wordMLPackage.setFontMapper(new IdentityPlusMapper());
+        tempFile.deleteOnExit();
+
+        // MainDocument işlemleri
+        MainDocumentPart mainPart = wordMLPackage.getMainDocumentPart();
+        List<Object> content = mainPart.getContent();
+
+        for (int i = 0; i < content.size(); i++) {
+            Object o = content.get(i);
+            if (o instanceof P) {
+                P para = (P) o;
+                String text = getTextFromParagraph(para);
+
+                if (MektupTipEnum.HAKEDIS_DEVIR_MEKTUPLARI.equals(dto.getMektupTip())) {
+                    if ("%%DVR_DATA%%".equals(text)) {
+                        PPr existingPPr = para.getPPr();
+                        content.remove(i);
+
+                        P paragraph = buildParagraphWithLineBreaks(dto.getObjectList(), existingPPr);
+                        content.add(i, paragraph);
+                        break;
+                    }
+                }
+            }
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PdfConversion conversion = new Conversion(wordMLPackage);
+        conversion.output(baos, new org.docx4j.convert.out.pdf.PdfSettings());
+        baos.flush();
+
+        return baos;
+    }
+
+    /**
+     * Paragrafı, satır atlamalı olarak oluşturur.
+     */
+    private static P buildParagraphWithLineBreaks(List<String[]> objectList, PPr existingPPr) {
+        P paragraph = new P();
+        if (existingPPr != null) {
+            paragraph.setPPr(XmlUtils.deepCopy(existingPPr));
+        }
+
+        for (String[] objectLine : objectList) {
+            if (objectLine.length >= 2) {
+                String kararNo = objectLine[0];
+                String tutarNo = objectLine[1];
+
+                R run = new R();
+                Text text = new Text();
+                text.setValue(simplifyTurkishCharacters("Karar No: " + kararNo + " Tutar (TL): " + tutarNo));
+                run.getContent().add(text);
+                paragraph.getContent().add(run);
+
+                R brRun = new R();
+                brRun.getContent().add(new Br());
+                paragraph.getContent().add(brRun);
+
+                if (objectLine.length >= 3) {
+                    String firma = objectLine[2];
+
+                    R run2 = new R();
+                    Text text2 = new Text();
+                    text2.setValue(simplifyTurkishCharacters("Devreden Firma: " + firma));
+                    run2.getContent().add(text2);
+                    paragraph.getContent().add(run2);
+                }
+            }
+        }
+
+        return paragraph;
+    }
+
+    /**
+     * Text içindeki Türkçe karakterleri sadeleştirir.
+     */
+    public static String simplifyTurkishCharacters(String input) {
+        if (input == null) {
+            return null;
+        }
+
+        return input
+                .replace('İ', 'I')
+                .replace('I', 'I')
+                .replace('ı', 'i')
+                .replace('Ğ', 'G')
+                .replace('ğ', 'g')
+                .replace('Ü', 'U')
+                .replace('ü', 'u')
+                .replace('Ş', 'S')
+                .replace('ş', 's')
+                .replace('Ö', 'O')
+                .replace('ö', 'o')
+                .replace('Ç', 'C')
+                .replace('ç', 'c');
+    }
+
+    /**
+     * Paragraftaki Text içerikleri birleştirir.
+     */
+    private static String getTextFromParagraph(P paragraph) {
+        StringBuilder text = new StringBuilder();
+        List<Object> runs = paragraph.getContent();
+        for (Object obj : runs) {
+            if (obj instanceof R) {
+                R run = (R) obj;
+                for (Object content : run.getContent()) {
+                    if (content instanceof Text) {
+                        Text t = (Text) content;
+                        text.append(t.getValue());
+                    }
+                }
+            }
+        }
+        return text.toString();
+    }
+}
+
+
+
+
+
+
 public static String simplifyTurkishCharacters(String input) {
     if (input == null) {
         return null;
